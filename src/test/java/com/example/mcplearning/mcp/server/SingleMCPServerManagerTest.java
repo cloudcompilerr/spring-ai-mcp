@@ -36,6 +36,7 @@ class SingleMCPServerManagerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
+        objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         configuration = createTestConfiguration();
         serverManager = new SingleMCPServerManager(configuration, objectMapper);
     }

@@ -25,9 +25,36 @@ mcp:
   # Connection settings
   connection-timeout: 30s
   max-retries: 3
+  retry-delay: 5s
+  health-check-interval: 1m
   
-  # Multi-server support (will be used in later tasks)
+  # Multi-server support
   enable-multi-server: false
+  
+  # Reactive configuration
+  reactive:
+    enabled: true
+    buffer-size: 256
+    timeout: 30s
+    enable-server-sent-events: true
+    sse-heartbeat-interval: 30s
+  
+  # Educational configuration
+  educational:
+    enable-demonstrations: true
+    enable-interactive-examples: true
+    show-protocol-details: true
+    enable-step-by-step-mode: false
+    step-delay: 2s
+    max-examples: 10
+    enable-error-simulation: true
+    
+    learning-progression:
+      enforce-order: false
+      track-progress: true
+      show-hints: true
+      adaptive-difficulty: false
+      minimum-example-time: 30s
   
   # Server configurations (examples for educational purposes)
   servers:

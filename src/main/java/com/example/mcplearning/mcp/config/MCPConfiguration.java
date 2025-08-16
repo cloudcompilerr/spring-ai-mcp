@@ -68,6 +68,12 @@ public class MCPConfiguration {
     @NotNull(message = "Health check interval is required")
     private Duration healthCheckInterval = Duration.ofMinutes(1);
     
+    /**
+     * Reactive configuration settings.
+     */
+    @Valid
+    private ReactiveConfig reactive = new ReactiveConfig();
+    
     // Getters and setters
     
     public List<MCPServerConfig> getServers() {
@@ -134,6 +140,14 @@ public class MCPConfiguration {
         this.healthCheckInterval = healthCheckInterval;
     }
     
+    public ReactiveConfig getReactive() {
+        return reactive;
+    }
+    
+    public void setReactive(ReactiveConfig reactive) {
+        this.reactive = reactive;
+    }
+    
     /**
      * Gets only the enabled server configurations.
      * 
@@ -181,6 +195,82 @@ public class MCPConfiguration {
             return enabledServers;
         } else {
             return List.of(enabledServers.get(0));
+        }
+    }
+    
+    /**
+     * Reactive configuration settings for WebFlux integration.
+     */
+    public static class ReactiveConfig {
+        
+        /**
+         * Whether to enable reactive MCP features.
+         */
+        private boolean enabled = true;
+        
+        /**
+         * Buffer size for reactive streams.
+         */
+        @Min(value = 1, message = "Buffer size must be positive")
+        private int bufferSize = 256;
+        
+        /**
+         * Timeout for reactive operations.
+         */
+        @NotNull(message = "Reactive timeout is required")
+        private Duration timeout = Duration.ofSeconds(30);
+        
+        /**
+         * Whether to enable server-sent events.
+         */
+        private boolean enableServerSentEvents = true;
+        
+        /**
+         * Interval for server-sent event heartbeats.
+         */
+        @NotNull(message = "SSE heartbeat interval is required")
+        private Duration sseHeartbeatInterval = Duration.ofSeconds(30);
+        
+        // Getters and setters
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        
+        public int getBufferSize() {
+            return bufferSize;
+        }
+        
+        public void setBufferSize(int bufferSize) {
+            this.bufferSize = bufferSize;
+        }
+        
+        public Duration getTimeout() {
+            return timeout;
+        }
+        
+        public void setTimeout(Duration timeout) {
+            this.timeout = timeout;
+        }
+        
+        public boolean isEnableServerSentEvents() {
+            return enableServerSentEvents;
+        }
+        
+        public void setEnableServerSentEvents(boolean enableServerSentEvents) {
+            this.enableServerSentEvents = enableServerSentEvents;
+        }
+        
+        public Duration getSseHeartbeatInterval() {
+            return sseHeartbeatInterval;
+        }
+        
+        public void setSseHeartbeatInterval(Duration sseHeartbeatInterval) {
+            this.sseHeartbeatInterval = sseHeartbeatInterval;
         }
     }
 }

@@ -66,6 +66,7 @@ public class DefaultMCPClient implements MCPClient {
                     logger.info("MCP client initialized successfully");
                 } else {
                     logger.error("MCP initialization failed: {}", response.error());
+                    throw new MCPClientException("MCP initialization failed: " + response.error().message());
                 }
                 return MCPResponse.success(response.id(), response.result());
             })
@@ -78,11 +79,13 @@ public class DefaultMCPClient implements MCPClient {
     @Override
     public CompletableFuture<List<MCPTool>> listTools() {
         ensureInitialized();
-        logger.debug("Listing available tools");
+        logger.info("🔧 MCP Protocol: Requesting tool discovery from server");
+        logger.debug("Sending tools/list request to discover available MCP tools");
         
         return sendRequest("tools/list", null)
             .thenApply(response -> {
                 if (response.isError()) {
+                    logger.error("❌ MCP Protocol: Tool discovery failed - {}", response.error().message());
                     throw new MCPClientException("Failed to list tools: " + response.error().message());
                 }
                 
@@ -91,12 +94,21 @@ public class DefaultMCPClient implements MCPClient {
                         Object toolsObj = resultMap.get("tools");
                         if (toolsObj != null) {
                             List<MCPTool> tools = objectMapper.convertValue(toolsObj, new TypeReference<List<MCPTool>>() {});
-                            logger.debug("Retrieved {} tools", tools.size());
+                            logger.info("✅ MCP Protocol: Discovered {} tools from server", tools.size());
+                            
+                            // Educational logging: show tool details
+                            if (logger.isDebugEnabled()) {
+                                tools.forEach(tool -> 
+                                    logger.debug("  📋 Tool: '{}' - {}", tool.name(), tool.description()));
+                            }
+                            
                             return tools;
                         }
                     }
+                    logger.warn("⚠️ MCP Protocol: Server returned empty tools list");
                     return List.of();
                 } catch (Exception e) {
+                    logger.error("❌ MCP Protocol: Failed to parse tools response", e);
                     throw new MCPClientException("Failed to parse tools response", e);
                 }
             });
@@ -105,7 +117,12 @@ public class DefaultMCPClient implements MCPClient {
     @Override
     public CompletableFuture<MCPToolResult> callTool(String toolName, Map<String, Object> arguments) {
         ensureInitialized();
-        logger.debug("Calling tool '{}' with arguments: {}", toolName, arguments);
+        logger.info("🚀 MCP Protocol: Executing tool '{}' with {} arguments", 
+                   toolName, arguments != null ? arguments.size() : 0);
+        
+        if (logger.isDebugEnabled() && arguments != null && !arguments.isEmpty()) {
+            logger.debug("  📝 Tool arguments: {}", arguments);
+        }
         
         Map<String, Object> params = Map.of(
             "name", toolName,
@@ -115,14 +132,28 @@ public class DefaultMCPClient implements MCPClient {
         return sendRequest("tools/call", params)
             .thenApply(response -> {
                 if (response.isError()) {
+                    logger.error("❌ MCP Protocol: Tool '{}' execution failed - {}", 
+                               toolName, response.error().message());
                     throw new MCPClientException("Tool execution failed: " + response.error().message());
                 }
                 
                 try {
                     MCPToolResult result = objectMapper.convertValue(response.result(), MCPToolResult.class);
-                    logger.debug("Tool '{}' executed successfully", toolName);
+                    
+                    if (result.isError()) {
+                        logger.warn("⚠️ MCP Protocol: Tool '{}' returned error result", toolName);
+                    } else {
+                        logger.info("✅ MCP Protocol: Tool '{}' executed successfully", toolName);
+                    }
+                    
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("  📤 Tool result content length: {} characters", 
+                                   result.content() != null ? result.content().length() : 0);
+                    }
+                    
                     return result;
                 } catch (Exception e) {
+                    logger.error("❌ MCP Protocol: Failed to parse tool result for '{}'", toolName, e);
                     throw new MCPClientException("Failed to parse tool result", e);
                 }
             });
@@ -131,11 +162,13 @@ public class DefaultMCPClient implements MCPClient {
     @Override
     public CompletableFuture<List<MCPResource>> listResources() {
         ensureInitialized();
-        logger.debug("Listing available resources");
+        logger.info("📚 MCP Protocol: Requesting resource discovery from server");
+        logger.debug("Sending resources/list request to discover available MCP resources");
         
         return sendRequest("resources/list", null)
             .thenApply(response -> {
                 if (response.isError()) {
+                    logger.error("❌ MCP Protocol: Resource discovery failed - {}", response.error().message());
                     throw new MCPClientException("Failed to list resources: " + response.error().message());
                 }
                 
@@ -144,12 +177,22 @@ public class DefaultMCPClient implements MCPClient {
                         Object resourcesObj = resultMap.get("resources");
                         if (resourcesObj != null) {
                             List<MCPResource> resources = objectMapper.convertValue(resourcesObj, new TypeReference<List<MCPResource>>() {});
-                            logger.debug("Retrieved {} resources", resources.size());
+                            logger.info("✅ MCP Protocol: Discovered {} resources from server", resources.size());
+                            
+                            // Educational logging: show resource details
+                            if (logger.isDebugEnabled()) {
+                                resources.forEach(resource -> 
+                                    logger.debug("  📄 Resource: '{}' ({}) - {}", 
+                                               resource.name(), resource.mimeType(), resource.description()));
+                            }
+                            
                             return resources;
                         }
                     }
+                    logger.warn("⚠️ MCP Protocol: Server returned empty resources list");
                     return List.of();
                 } catch (Exception e) {
+                    logger.error("❌ MCP Protocol: Failed to parse resources response", e);
                     throw new MCPClientException("Failed to parse resources response", e);
                 }
             });
@@ -158,13 +201,15 @@ public class DefaultMCPClient implements MCPClient {
     @Override
     public CompletableFuture<String> readResource(String uri) {
         ensureInitialized();
-        logger.debug("Reading resource: {}", uri);
+        logger.info("📖 MCP Protocol: Reading resource content from '{}'", uri);
         
         Map<String, Object> params = Map.of("uri", uri);
         
         return sendRequest("resources/read", params)
             .thenApply(response -> {
                 if (response.isError()) {
+                    logger.error("❌ MCP Protocol: Failed to read resource '{}' - {}", 
+                               uri, response.error().message());
                     throw new MCPClientException("Failed to read resource: " + response.error().message());
                 }
                 
@@ -175,15 +220,25 @@ public class DefaultMCPClient implements MCPClient {
                             Object firstContent = contentsList.get(0);
                             if (firstContent instanceof Map<?, ?> contentMap) {
                                 Object text = contentMap.get("text");
-                                if (text instanceof String) {
-                                    logger.debug("Successfully read resource: {}", uri);
-                                    return (String) text;
+                                if (text instanceof String textContent) {
+                                    logger.info("✅ MCP Protocol: Successfully read resource '{}' ({} characters)", 
+                                              uri, textContent.length());
+                                    
+                                    if (logger.isDebugEnabled() && textContent.length() < 500) {
+                                        logger.debug("  📄 Resource content preview: {}", 
+                                                   textContent.substring(0, Math.min(200, textContent.length())) + 
+                                                   (textContent.length() > 200 ? "..." : ""));
+                                    }
+                                    
+                                    return textContent;
                                 }
                             }
                         }
                     }
+                    logger.error("❌ MCP Protocol: Invalid resource content format for '{}'", uri);
                     throw new MCPClientException("Invalid resource content format");
                 } catch (Exception e) {
+                    logger.error("❌ MCP Protocol: Failed to parse resource content for '{}'", uri, e);
                     throw new MCPClientException("Failed to parse resource content", e);
                 }
             });
@@ -218,8 +273,28 @@ public class DefaultMCPClient implements MCPClient {
         String requestId = String.valueOf(requestIdCounter.getAndIncrement());
         JsonRpcRequest request = JsonRpcRequest.create(requestId, method, params);
         
+        logger.debug("📡 MCP Protocol: Sending JSON-RPC request [{}] method='{}' params={}", 
+                    requestId, method, params != null ? "present" : "null");
+        
+        long startTime = System.currentTimeMillis();
+        
         return transport.sendRequest(request)
+            .whenComplete((response, throwable) -> {
+                long duration = System.currentTimeMillis() - startTime;
+                
+                if (throwable != null) {
+                    logger.error("📡 MCP Protocol: Request [{}] failed after {}ms - {}", 
+                               requestId, duration, throwable.getMessage());
+                } else if (response.isError()) {
+                    logger.warn("📡 MCP Protocol: Request [{}] returned error after {}ms - {}", 
+                              requestId, duration, response.error().message());
+                } else {
+                    logger.debug("📡 MCP Protocol: Request [{}] completed successfully after {}ms", 
+                               requestId, duration);
+                }
+            })
             .exceptionally(throwable -> {
+                logger.error("📡 MCP Protocol: Transport error during request [{}]", requestId, throwable);
                 throw new MCPClientException("Transport error during request", throwable);
             });
     }

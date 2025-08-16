@@ -1,0 +1,109 @@
+# Testing Profile Configuration
+# This profile is optimized for automated testing with mock servers and fast execution
+
+spring:
+  profiles:
+    active: testing
+
+# Testing logging configuration
+logging:
+  level:
+    root: WARN
+    "[com.example.mcplearning]": INFO
+    "[com.example.mcplearning.mcp.client]": DEBUG
+    "[com.example.mcplearning.mcp.server]": DEBUG
+  
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%logger{36}] - %msg%n"
+  
+  # No file logging for tests
+  file:
+    name: target/test-logs/mcp-learning-platform-test.log
+
+# MCP Configuration for Testing
+mcp:
+  # Testing educational settings
+  verbose-logging: false
+  enable-examples: true
+  
+  # Fast timeouts for testing
+  connection-timeout: 5s
+  max-retries: 1
+  retry-delay: 1s
+  health-check-interval: 10s
+  
+  # Test both single and multi-server modes
+  enable-multi-server: false
+  
+  # Reactive configuration for testing
+  reactive:
+    enabled: true
+    buffer-size: 64
+    timeout: 5s
+    enable-server-sent-events: false  # Disabled for simpler testing
+    sse-heartbeat-interval: 10s
+  
+  # Educational configuration for testing
+  educational:
+    enable-demonstrations: true
+    enable-interactive-examples: false  # Disabled for automated tests
+    show-protocol-details: false
+    enable-step-by-step-mode: false
+    step-delay: 100ms
+    max-examples: 3
+    enable-error-simulation: true
+    
+    learning-progression:
+      enforce-order: false
+      track-progress: false
+      show-hints: false
+      adaptive-difficulty: false
+      minimum-example-time: 1s
+  
+  # Mock server configurations for testing
+  servers:
+    - id: test-mock-server
+      name: Test Mock MCP Server
+      command: echo
+      args: 
+        - "Mock server for testing"
+      env:
+        MCP_LOG_LEVEL: ERROR
+        TEST_MODE: "true"
+      enabled: true
+    - id: test-filesystem-server
+      name: Test File System Server
+      command: echo
+      args:
+        - "Mock filesystem server for testing"
+      env:
+        MCP_LOG_LEVEL: ERROR
+        TEST_MODE: "true"
+      enabled: false  # Disabled by default, enabled in specific tests
+
+# Testing web server settings
+server:
+  port: 0  # Random port for testing
+  error:
+    include-stacktrace: always
+    include-message: always
+
+# Jackson configuration for testing
+spring:
+  jackson:
+    default-property-inclusion: non-null
+    serialization:
+      indent-output: false
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# Management endpoints disabled for testing
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

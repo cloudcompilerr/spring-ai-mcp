@@ -2,6 +2,7 @@ package com.example.mcplearning.mcp.server;
 
 import com.example.mcplearning.mcp.transport.JsonRpcRequest;
 import com.example.mcplearning.mcp.transport.JsonRpcResponse;
+import com.example.mcplearning.mcp.transport.JsonRpcError;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

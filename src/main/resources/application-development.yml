@@ -1,0 +1,124 @@
+# Development Profile Configuration
+# This profile is optimized for development and testing with enhanced logging and debugging features
+
+spring:
+  profiles:
+    active: development
+
+# Enhanced logging for development
+logging:
+  level:
+    root: INFO
+    "[com.example.mcplearning]": DEBUG
+    "[com.example.mcplearning.mcp.transport]": TRACE
+    "[com.example.mcplearning.mcp.client]": DEBUG
+    "[com.example.mcplearning.mcp.server]": DEBUG
+    "[org.springframework.web]": DEBUG
+    "[reactor.netty]": DEBUG
+  
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+  
+  file:
+    name: logs/mcp-learning-platform-dev.log
+
+# MCP Configuration for Development
+mcp:
+  # Enhanced educational settings for development
+  verbose-logging: true
+  enable-examples: true
+  
+  # Shorter timeouts for faster development feedback
+  connection-timeout: 15s
+  max-retries: 2
+  retry-delay: 2s
+  health-check-interval: 30s
+  
+  # Single server mode for simpler development
+  enable-multi-server: false
+  
+  # Reactive configuration optimized for development
+  reactive:
+    enabled: true
+    buffer-size: 128
+    timeout: 15s
+    enable-server-sent-events: true
+    sse-heartbeat-interval: 15s
+  
+  # Educational configuration for development
+  educational:
+    enable-demonstrations: true
+    enable-interactive-examples: true
+    show-protocol-details: true
+    enable-step-by-step-mode: true
+    step-delay: 1s
+    max-examples: 5
+    enable-error-simulation: true
+    
+    learning-progression:
+      enforce-order: false
+      track-progress: true
+      show-hints: true
+      adaptive-difficulty: false
+      minimum-example-time: 10s
+  
+  # Development server configurations (using mock servers)
+  servers:
+    - id: dev-filesystem-server
+      name: Development File System Server
+      command: echo
+      args: 
+        - "Mock filesystem server for development"
+      env:
+        MCP_LOG_LEVEL: DEBUG
+        DEV_MODE: "true"
+      enabled: true
+    - id: dev-memory-server
+      name: Development Memory Server
+      command: echo
+      args:
+        - "Mock memory server for development"
+      env:
+        MCP_LOG_LEVEL: DEBUG
+        DEV_MODE: "true"
+      enabled: false
+
+# Development-specific web server settings
+server:
+  port: 8080
+  error:
+    include-stacktrace: always
+    include-message: always
+    include-binding-errors: always
+
+# Jackson configuration for development (pretty printing)
+  jackson:
+    default-property-inclusion: non-null
+    serialization:
+      indent-output: true
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# Management endpoints for development monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    configprops:
+      show-values: always
+    env:
+      show-values: always
+  
+  # Enable detailed metrics for development
+  metrics:
+    export:
+      simple:
+        enabled: true

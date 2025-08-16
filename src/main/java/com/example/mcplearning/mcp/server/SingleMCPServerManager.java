@@ -29,19 +29,38 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Single MCP Server Manager implementation.
  * 
- * This implementation focuses on managing a single MCP server connection
- * with comprehensive lifecycle management, error handling, and educational
- * logging. It serves as the foundation for understanding MCP server
- * management before moving to multi-server scenarios.
+ * EDUCATIONAL OVERVIEW:
+ * This class demonstrates the complete lifecycle management of a single MCP server
+ * connection. It serves as the foundation for understanding MCP server management
+ * patterns before progressing to more complex multi-server scenarios.
+ * 
+ * KEY MCP CONCEPTS DEMONSTRATED:
+ * - Server Connection Lifecycle: connect → initialize → ready → disconnect
+ * - MCP Protocol Initialization: proper handshake and capability negotiation
+ * - Error Handling Patterns: retry logic, exponential backoff, graceful degradation
+ * - Health Monitoring: continuous server health checks and status reporting
+ * - Resource Management: proper cleanup of connections and threads
+ * 
+ * LEARNING PROGRESSION:
+ * 1. Start here to understand basic MCP server management
+ * 2. Observe the connection establishment and initialization sequence
+ * 3. Study error handling and recovery mechanisms
+ * 4. Learn health monitoring and status reporting patterns
+ * 5. Progress to MultiMCPServerManager for advanced scenarios
+ * 
+ * ARCHITECTURE PATTERN:
+ * SingleMCPServerManager → MCPTransport → MCP Server Process
+ *                      ↓
+ *                   MCPClient → JSON-RPC Operations
  * 
  * Key features:
  * - Complete server lifecycle management (connect, initialize, disconnect)
- * - Comprehensive error handling and recovery
- * - Educational logging of all MCP operations
- * - Health monitoring and status reporting
- * - Configurable retry logic with exponential backoff
+ * - Comprehensive error handling and recovery with exponential backoff
+ * - Educational logging of all MCP operations and state changes
+ * - Health monitoring and detailed status reporting
+ * - Configurable timeouts and retry policies
+ * - Thread-safe operations for concurrent access
  */
-@Component
 public class SingleMCPServerManager implements MCPServerManager {
     
     private static final Logger logger = LoggerFactory.getLogger(SingleMCPServerManager.class);
@@ -69,6 +88,7 @@ public class SingleMCPServerManager implements MCPServerManager {
             this.config = config;
             this.status = MCPServerStatus.disconnected(config);
             this.connectionAttempts = 0;
+            this.lastConnectionAttempt = null;
         }
     }
     
@@ -254,6 +274,8 @@ public class SingleMCPServerManager implements MCPServerManager {
         if (attempt >= configuration.getMaxRetries()) {
             String errorMsg = String.format("Failed to connect after %d attempts", configuration.getMaxRetries());
             logger.error("Connection failed for server {} ({}): {}", state.config.name(), state.config.id(), errorMsg);
+            state.connectionAttempts = attempt;
+            state.lastConnectionAttempt = Instant.now();
             updateServerStatus(state, MCPServerStatus.error(state.config, errorMsg, attempt));
             return CompletableFuture.failedFuture(new MCPServerException(state.config.id(), errorMsg));
         }
@@ -261,6 +283,8 @@ public class SingleMCPServerManager implements MCPServerManager {
         logger.info("Connecting to MCP server {} ({}) - attempt {} of {}", 
             state.config.name(), state.config.id(), attempt + 1, configuration.getMaxRetries());
         
+        state.connectionAttempts = attempt + 1;
+        state.lastConnectionAttempt = Instant.now();
         updateServerStatus(state, MCPServerStatus.connecting(state.config, attempt + 1));
         
         return establishConnection(state)
@@ -293,6 +317,8 @@ public class SingleMCPServerManager implements MCPServerManager {
                         TimeUnit.SECONDS
                     );
                 } else {
+                    state.connectionAttempts = attempt + 1;
+                    state.lastConnectionAttempt = Instant.now();
                     updateServerStatus(state, MCPServerStatus.error(state.config, throwable.getMessage(), attempt + 1));
                 }
                 

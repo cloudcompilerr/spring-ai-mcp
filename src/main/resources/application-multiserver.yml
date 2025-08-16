@@ -1,0 +1,78 @@
+# Multi-server MCP Configuration Profile
+# This profile demonstrates advanced multi-server MCP setup with multiple concurrent servers
+
+mcp:
+  # Enable multi-server support
+  enable-multi-server: true
+  
+  # Enhanced settings for multi-server environments
+  verbose-logging: true
+  enable-examples: true
+  
+  # Connection settings optimized for multiple servers
+  connection-timeout: 45s
+  max-retries: 5
+  retry-delay: 3s
+  health-check-interval: 30s
+  
+  # Multiple server configurations for demonstration
+  servers:
+    - id: filesystem-server
+      name: File System MCP Server
+      command: uvx
+      args: 
+        - mcp-server-filesystem
+        - /tmp/mcp-demo
+      env:
+        MCP_LOG_LEVEL: INFO
+      enabled: true
+      
+    - id: git-server
+      name: Git MCP Server
+      command: uvx
+      args:
+        - mcp-server-git
+        - --repository
+        - .
+      env:
+        MCP_LOG_LEVEL: INFO
+      enabled: true
+      
+    - id: memory-server
+      name: Memory MCP Server
+      command: uvx
+      args:
+        - mcp-server-memory
+      env:
+        MCP_LOG_LEVEL: INFO
+      enabled: true
+      
+    - id: sqlite-server
+      name: SQLite MCP Server
+      command: uvx
+      args:
+        - mcp-server-sqlite
+        - --db-path
+        - /tmp/mcp-demo.db
+      env:
+        MCP_LOG_LEVEL: INFO
+      enabled: false  # Optional server for advanced scenarios
+
+# Enhanced logging for multi-server debugging
+logging:
+  level:
+    com.example.mcplearning.mcp.server.MultiMCPServerManager: DEBUG
+    com.example.mcplearning.mcp.server.MCPToolRouter: DEBUG
+    com.example.mcplearning.mcp.server.HealthBasedSelectionStrategy: DEBUG
+    com.example.mcplearning.mcp.server.RoundRobinSelectionStrategy: DEBUG
+    
+# Additional management endpoints for multi-server monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,beans,configprops
+  endpoint:
+    health:
+      show-details: always
+      show-components: always

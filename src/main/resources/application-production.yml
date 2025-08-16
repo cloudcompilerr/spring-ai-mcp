@@ -1,0 +1,167 @@
+# Production Profile Configuration
+# This profile is optimized for production deployment with security and performance considerations
+
+spring:
+  profiles:
+    active: production
+
+# Production logging configuration
+logging:
+  level:
+    root: WARN
+    "[com.example.mcplearning]": INFO
+    "[com.example.mcplearning.mcp.server.MCPServerManager]": INFO
+    "[com.example.mcplearning.mcp.client]": INFO
+  
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%logger{36}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%logger{36}] - %msg%n"
+  
+  file:
+    name: /var/log/mcp-learning-platform/application.log
+    max-size: 100MB
+    max-history: 30
+
+# MCP Configuration for Production
+mcp:
+  # Production educational settings
+  verbose-logging: false
+  enable-examples: true
+  
+  # Production-optimized timeouts and retries
+  connection-timeout: 60s
+  max-retries: 5
+  retry-delay: 10s
+  health-check-interval: 2m
+  
+  # Multi-server support for production resilience
+  enable-multi-server: true
+  
+  # Reactive configuration for production
+  reactive:
+    enabled: true
+    buffer-size: 512
+    timeout: 60s
+    enable-server-sent-events: true
+    sse-heartbeat-interval: 60s
+  
+  # Educational configuration for production
+  educational:
+    enable-demonstrations: true
+    enable-interactive-examples: true
+    show-protocol-details: false
+    enable-step-by-step-mode: false
+    step-delay: 3s
+    max-examples: 20
+    enable-error-simulation: false
+    
+    learning-progression:
+      enforce-order: true
+      track-progress: true
+      show-hints: true
+      adaptive-difficulty: true
+      minimum-example-time: 60s
+  
+  # Production server configurations
+  servers:
+    - id: filesystem-server
+      name: File System MCP Server
+      command: uvx
+      args: 
+        - mcp-server-filesystem
+        - /opt/mcp-data/filesystem
+      env:
+        MCP_LOG_LEVEL: INFO
+        PRODUCTION_MODE: "true"
+      enabled: true
+    - id: git-server
+      name: Git MCP Server
+      command: uvx
+      args:
+        - mcp-server-git
+        - --repository
+        - /opt/mcp-data/repositories/main
+      env:
+        MCP_LOG_LEVEL: INFO
+        PRODUCTION_MODE: "true"
+      enabled: true
+    - id: sqlite-server
+      name: SQLite MCP Server
+      command: uvx
+      args:
+        - mcp-server-sqlite
+        - --db-path
+        - /opt/mcp-data/databases/main.db
+      env:
+        MCP_LOG_LEVEL: INFO
+        PRODUCTION_MODE: "true"
+      enabled: true
+    - id: memory-server
+      name: Memory MCP Server
+      command: uvx
+      args:
+        - mcp-server-memory
+      env:
+        MCP_LOG_LEVEL: INFO
+        PRODUCTION_MODE: "true"
+      enabled: false  # Optional server for specific use cases
+
+# Production web server settings
+server:
+  port: 8080
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+  
+  # Production security headers
+  servlet:
+    context-path: /mcp-learning
+  
+  # Connection settings for production load
+  tomcat:
+    max-connections: 8192
+    max-threads: 200
+    min-spare-threads: 10
+
+# Jackson configuration for production
+spring:
+  jackson:
+    default-property-inclusion: non-null
+    serialization:
+      indent-output: false
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# Management endpoints for production monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized
+    info:
+      enabled: true
+  
+  # Production metrics configuration
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: mcp-learning-platform
+      environment: production
+  
+  # Health check configuration
+  health:
+    defaults:
+      enabled: true
+    diskspace:
+      enabled: true
+      threshold: 1GB

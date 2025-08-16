@@ -12,15 +12,28 @@ import java.util.concurrent.*;
 /**
  * Process-based MCP transport implementation.
  * 
- * This transport communicates with MCP servers that run as separate processes,
- * using stdin/stdout for JSON-RPC message exchange. This is the most common
- * transport mechanism for MCP servers.
+ * EDUCATIONAL OVERVIEW:
+ * This transport demonstrates how MCP clients communicate with servers that run
+ * as separate processes. This is the most common MCP deployment pattern, where
+ * the server is a standalone executable that communicates via stdin/stdout.
  * 
- * The transport handles:
- * - Process lifecycle management
+ * KEY MCP CONCEPTS DEMONSTRATED:
+ * - JSON-RPC 2.0 protocol over stdio streams
+ * - Asynchronous request/response correlation using message IDs
+ * - Process lifecycle management (start, monitor, cleanup)
+ * - Error handling for network-like failures in process communication
+ * - Timeout handling for unresponsive servers
+ * 
+ * ARCHITECTURE PATTERN:
+ * Client Process ←→ stdin/stdout ←→ MCP Server Process
+ * 
+ * This transport handles:
+ * - Process lifecycle management (starting, monitoring, terminating)
  * - Asynchronous message sending and receiving
- * - Request/response correlation
- * - Error handling and cleanup
+ * - Request/response correlation using JSON-RPC message IDs
+ * - Timeout handling for requests that don't receive responses
+ * - Error handling and resource cleanup
+ * - Thread management for concurrent operations
  */
 public class ProcessMCPTransport implements MCPTransport {
     
@@ -71,31 +84,45 @@ public class ProcessMCPTransport implements MCPTransport {
     public CompletableFuture<Void> connect() {
         return CompletableFuture.runAsync(() -> {
             try {
-                logger.debug("Starting MCP server process: {} {}", command, args);
+                logger.info("🚀 MCP Transport: Starting server process - {} {}", command, args);
                 
+                // EDUCATIONAL NOTE: ProcessBuilder is Java's way to start external processes
+                // This is how we launch MCP servers that are separate executables
                 ProcessBuilder processBuilder = new ProcessBuilder();
                 processBuilder.command().add(command);
                 processBuilder.command().addAll(args);
                 
+                // EDUCATIONAL NOTE: Environment variables can be used to configure MCP servers
+                // Common examples: API keys, configuration paths, debug flags
                 if (environment != null && !environment.isEmpty()) {
                     processBuilder.environment().putAll(environment);
+                    logger.debug("🔧 MCP Transport: Added {} environment variables", environment.size());
                 }
                 
-                // Redirect stderr to help with debugging
+                // EDUCATIONAL NOTE: We keep stderr separate for debugging
+                // MCP protocol uses stdout for JSON-RPC, stderr for logs/errors
                 processBuilder.redirectErrorStream(false);
                 
+                // EDUCATIONAL NOTE: This starts the actual MCP server process
                 process = processBuilder.start();
+                logger.debug("📡 MCP Transport: Process started with PID {}", process.pid());
                 
+                // EDUCATIONAL NOTE: Set up communication channels
+                // stdin -> send JSON-RPC requests to server
+                // stdout -> receive JSON-RPC responses from server
                 processInput = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
                 processOutput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 
-                // Start the response reader thread
+                // EDUCATIONAL NOTE: Start background thread to read server responses
+                // This enables asynchronous communication - we can send requests
+                // without blocking while waiting for responses
                 startResponseReader();
                 
                 connected = true;
-                logger.info("MCP server process started successfully");
+                logger.info("✅ MCP Transport: Server process connected and ready");
                 
             } catch (IOException e) {
+                logger.error("❌ MCP Transport: Failed to start server process", e);
                 throw new MCPTransportException("Failed to start MCP server process", e);
             }
         }, executorService);
@@ -108,22 +135,37 @@ public class ProcessMCPTransport implements MCPTransport {
                 new MCPTransportException("Transport is not connected"));
         }
         
+        logger.debug("📤 MCP Transport: Sending request [{}] method='{}'", 
+                    request.id(), request.method());
+        
+        // EDUCATIONAL NOTE: Request/Response Correlation Pattern
+        // Since JSON-RPC is asynchronous, we need to match responses to requests
+        // We use the request ID as a correlation key and store a Future for each request
         CompletableFuture<JsonRpcResponse> responseFuture = new CompletableFuture<>();
         pendingRequests.put(request.id(), responseFuture);
         
-        // Set up timeout
+        // EDUCATIONAL NOTE: Timeout Handling
+        // MCP servers might not respond to requests (network issues, server hang, etc.)
+        // We set up a timeout to prevent clients from waiting indefinitely
         scheduledExecutorService.schedule(() -> {
             CompletableFuture<JsonRpcResponse> removed = pendingRequests.remove(request.id());
             if (removed != null && !removed.isDone()) {
+                logger.warn("⏰ MCP Transport: Request [{}] timed out after {}ms", 
+                          request.id(), timeoutMs);
                 removed.completeExceptionally(
                     new MCPTransportException("Request timed out after " + timeoutMs + "ms"));
             }
         }, timeoutMs, TimeUnit.MILLISECONDS);
         
+        // EDUCATIONAL NOTE: Asynchronous Message Flow
+        // 1. Send the message to the server process
+        // 2. Return immediately with a Future (non-blocking)
+        // 3. The response reader thread will complete the Future when response arrives
         return sendMessage(request)
             .thenCompose(v -> responseFuture)
             .exceptionally(throwable -> {
                 pendingRequests.remove(request.id());
+                logger.error("❌ MCP Transport: Request [{}] failed", request.id(), throwable);
                 throw new MCPTransportException("Failed to send request", throwable);
             });
     }
