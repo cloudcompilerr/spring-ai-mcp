@@ -1,0 +1,75 @@
+# MCP Learning Platform Configuration
+# This configuration file demonstrates Spring Boot best practices for MCP server management
+
+spring:
+  application:
+    name: mcp-learning-platform
+
+# Web server configuration
+server:
+  port: 8080
+  
+  # Jackson configuration for JSON processing
+  jackson:
+    default-property-inclusion: non-null
+    serialization:
+      indent-output: true
+      write-dates-as-timestamps: false
+
+# MCP-specific configuration
+mcp:
+  # Educational settings
+  verbose-logging: true
+  enable-examples: true
+  
+  # Connection settings
+  connection-timeout: 30s
+  max-retries: 3
+  
+  # Multi-server support (will be used in later tasks)
+  enable-multi-server: false
+  
+  # Server configurations (examples for educational purposes)
+  servers:
+    - id: filesystem-server
+      name: File System MCP Server
+      command: uvx
+      args: 
+        - mcp-server-filesystem
+        - /tmp/mcp-demo
+      env: {}  # Empty environment variables map
+      enabled: false  # Disabled by default for initial setup
+    - id: git-server
+      name: Git MCP Server
+      command: uvx
+      args:
+        - mcp-server-git
+        - --repository
+        - /path/to/repo
+      env: {}  # Empty environment variables map
+      enabled: false  # Disabled by default for initial setup
+
+# Logging configuration for educational verbose output
+logging:
+  level:
+    com.example.mcplearning: DEBUG
+    org.springframework.web: INFO
+    reactor.netty: INFO
+  
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+  
+  # Log to both console and file for educational purposes
+  file:
+    name: logs/mcp-learning-platform.log
+
+# Management endpoints for monitoring (educational)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

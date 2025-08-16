@@ -1,0 +1,38 @@
+# Test configuration for MCP Learning Platform
+# This configuration is used during testing to provide a clean, isolated environment
+
+spring:
+  application:
+    name: mcp-learning-platform-test
+
+# MCP test configuration
+mcp:
+  # Disable verbose logging during tests for cleaner output
+  verbose-logging: false
+  enable-examples: true
+  
+  # Shorter timeouts for faster test execution
+  connection-timeout: 5s
+  max-retries: 1
+  
+  # Disable multi-server for basic tests
+  enable-multi-server: false
+  
+  # No real servers configured for unit tests
+  servers: []
+
+# Test logging configuration
+logging:
+  level:
+    com.example.mcplearning: INFO
+    org.springframework: WARN
+    reactor.netty: WARN
+  
+  # Console only for tests
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+
+# Disable management endpoints in tests
+management:
+  endpoints:
+    enabled-by-default: false
