@@ -1,10 +1,6 @@
 package com.example.mcplearning.educational;
 
 import com.example.mcplearning.mcp.client.MCPClient;
-import com.example.mcplearning.mcp.protocol.MCPTool;
-import com.example.mcplearning.mcp.protocol.MCPToolResult;
-import com.example.mcplearning.mcp.protocol.MCPResource;
-import com.example.mcplearning.mcp.server.MultiMCPServerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -325,37 +321,288 @@ public class MCPLearningController {
     }
     
     /**
-     * Lists all available tools across all servers.
+     * Lists all available tools from MCP servers.
      * 
-     * @return List of available tools
+     * @param serverId Optional server ID to list tools from specific server
+     * @return List of available tools with server information
      */
-    @GetMapping("/tools")
-    public CompletableFuture<ResponseEntity<List<ToolInfo>>> listTools() {
-        logger.debug("🔧 Tools list requested");
+    @GetMapping("/examples/tools")
+    public ResponseEntity<Map<String, Object>> listToolsForDashboard(@RequestParam(required = false) String serverId) {
+        logger.debug("🔧 Dashboard tools list requested for server: {}", serverId);
         
-        // This is a simplified implementation - in a real scenario, you'd aggregate from all servers
-        return CompletableFuture.completedFuture(
-            ResponseEntity.ok(List.of(
-                new ToolInfo("example_tool", "An example tool for demonstration", "string")
-            ))
-        );
+        try {
+            // Mock response for now - in real implementation, this would query actual MCP servers
+            List<Map<String, Object>> tools = List.of(
+                Map.of(
+                    "name", "calculate",
+                    "description", "Perform mathematical calculations",
+                    "inputSchema", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                            "expression", Map.of("type", "string", "description", "Mathematical expression"),
+                            "precision", Map.of("type", "integer", "description", "Decimal precision")
+                        ),
+                        "required", List.of("expression")
+                    )
+                ),
+                Map.of(
+                    "name", "get_weather",
+                    "description", "Get current weather information",
+                    "inputSchema", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                            "location", Map.of("type", "string", "description", "City or location name")
+                        ),
+                        "required", List.of("location")
+                    )
+                ),
+                Map.of(
+                    "name", "echo",
+                    "description", "Echo back the input message",
+                    "inputSchema", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                            "message", Map.of("type", "string", "description", "Message to echo")
+                        ),
+                        "required", List.of("message")
+                    )
+                )
+            );
+            
+            Map<String, Object> response = Map.of(
+                "tools", tools,
+                "serverId", serverId != null ? serverId : "demo-server",
+                "timestamp", System.currentTimeMillis()
+            );
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Failed to list tools", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("error", "Failed to list tools: " + e.getMessage()));
+        }
     }
     
     /**
-     * Lists all available resources across all servers.
+     * Lists all available resources from MCP servers.
      * 
-     * @return List of available resources
+     * @param serverId Optional server ID to list resources from specific server
+     * @return List of available resources with server information
      */
-    @GetMapping("/resources")
-    public CompletableFuture<ResponseEntity<List<ResourceInfo>>> listResources() {
-        logger.debug("📚 Resources list requested");
+    @GetMapping("/examples/resources")
+    public ResponseEntity<Map<String, Object>> listResourcesForDashboard(@RequestParam(required = false) String serverId) {
+        logger.debug("📚 Dashboard resources list requested for server: {}", serverId);
         
-        // This is a simplified implementation - in a real scenario, you'd aggregate from all servers
-        return CompletableFuture.completedFuture(
-            ResponseEntity.ok(List.of(
-                new ResourceInfo("file:///example.txt", "Example Resource", "An example resource for demonstration", "text/plain")
-            ))
-        );
+        try {
+            // Mock response for now - in real implementation, this would query actual MCP servers
+            List<Map<String, Object>> resources = List.of(
+                Map.of(
+                    "uri", "demo://server/status",
+                    "name", "Server Status",
+                    "description", "Current server status and information",
+                    "mimeType", "application/json"
+                ),
+                Map.of(
+                    "uri", "demo://examples/help",
+                    "name", "Help Documentation",
+                    "description", "Help and usage examples",
+                    "mimeType", "text/markdown"
+                ),
+                Map.of(
+                    "uri", "file://example.txt",
+                    "name", "Example File",
+                    "description", "An example text file resource",
+                    "mimeType", "text/plain"
+                )
+            );
+            
+            Map<String, Object> response = Map.of(
+                "resources", resources,
+                "serverId", serverId != null ? serverId : "demo-server",
+                "timestamp", System.currentTimeMillis()
+            );
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Failed to list resources", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("error", "Failed to list resources: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Executes a tool call for the dashboard interface.
+     * 
+     * @param request The tool call request with tool name, arguments, and optional server ID
+     * @return Tool execution result with server information
+     */
+    @PostMapping("/examples/dashboard/tool-call")
+    public ResponseEntity<Map<String, Object>> executeToolForDashboard(@RequestBody Map<String, Object> request) {
+        String toolName = (String) request.get("toolName");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> arguments = (Map<String, Object>) request.getOrDefault("arguments", Map.of());
+        String serverId = (String) request.get("serverId");
+        
+        logger.info("🔧 Dashboard tool execution: {} on server: {}", toolName, serverId);
+        
+        try {
+            // Mock tool execution - in real implementation, this would call actual MCP servers
+            String result = executeToolMock(toolName, arguments);
+            
+            Map<String, Object> response = Map.of(
+                "toolName", toolName,
+                "arguments", arguments,
+                "result", result,
+                "isError", false,
+                "serverId", serverId != null ? serverId : "demo-server",
+                "timestamp", System.currentTimeMillis(),
+                "executionTime", "45ms"
+            );
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Tool execution failed: {}", toolName, e);
+            
+            Map<String, Object> errorResponse = Map.of(
+                "toolName", toolName,
+                "arguments", arguments,
+                "error", e.getMessage(),
+                "isError", true,
+                "serverId", serverId != null ? serverId : "demo-server",
+                "timestamp", System.currentTimeMillis()
+            );
+            
+            return ResponseEntity.ok(errorResponse);
+        }
+    }
+    
+    /**
+     * Reads a resource for the dashboard interface.
+     * 
+     * @param request The resource read request with URI and optional server ID
+     * @return Resource content with server information
+     */
+    @PostMapping("/examples/dashboard/resource-read")
+    public ResponseEntity<Map<String, Object>> readResourceForDashboard(@RequestBody Map<String, Object> request) {
+        String uri = (String) request.get("uri");
+        String serverId = (String) request.get("serverId");
+        
+        logger.info("📖 Dashboard resource read: {} from server: {}", uri, serverId);
+        
+        try {
+            // Mock resource reading - in real implementation, this would read from actual MCP servers
+            String content = readResourceMock(uri);
+            
+            Map<String, Object> response = Map.of(
+                "uri", uri,
+                "content", content,
+                "isError", false,
+                "serverId", serverId != null ? serverId : "demo-server",
+                "timestamp", System.currentTimeMillis(),
+                "contentLength", content.length()
+            );
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Resource read failed: {}", uri, e);
+            
+            Map<String, Object> errorResponse = Map.of(
+                "uri", uri,
+                "error", e.getMessage(),
+                "isError", true,
+                "serverId", serverId != null ? serverId : "demo-server",
+                "timestamp", System.currentTimeMillis()
+            );
+            
+            return ResponseEntity.ok(errorResponse);
+        }
+    }
+    
+    // Mock implementations for demonstration
+    
+    private String executeToolMock(String toolName, Map<String, Object> arguments) {
+        return switch (toolName) {
+            case "calculate" -> {
+                String expression = (String) arguments.get("expression");
+                if (expression == null) {
+                    throw new IllegalArgumentException("Expression is required");
+                }
+                // Simple calculation mock
+                if (expression.equals("2 + 3")) {
+                    yield "Result: 5";
+                } else if (expression.equals("10 * 5")) {
+                    yield "Result: 50";
+                } else {
+                    yield "Result: " + expression + " = [calculated value]";
+                }
+            }
+            case "get_weather" -> {
+                String location = (String) arguments.get("location");
+                if (location == null) {
+                    throw new IllegalArgumentException("Location is required");
+                }
+                yield String.format("Weather in %s: 22°C, Sunny, Light breeze", location);
+            }
+            case "echo" -> {
+                String message = (String) arguments.get("message");
+                if (message == null) {
+                    throw new IllegalArgumentException("Message is required");
+                }
+                yield "Echo: " + message;
+            }
+            default -> throw new IllegalArgumentException("Unknown tool: " + toolName);
+        };
+    }
+    
+    private String readResourceMock(String uri) {
+        return switch (uri) {
+            case "demo://server/status" -> """
+                {
+                  "server": "Demo MCP Server",
+                  "status": "running",
+                  "uptime": "2h 15m",
+                  "connections": 1,
+                  "tools": 3,
+                  "resources": 3
+                }
+                """;
+            case "demo://examples/help" -> """
+                # MCP Server Help
+                
+                ## Available Tools
+                - **calculate**: Perform mathematical calculations
+                - **get_weather**: Get weather information
+                - **echo**: Echo back messages
+                
+                ## Available Resources
+                - **demo://server/status**: Server status information
+                - **demo://examples/help**: This help document
+                - **file://example.txt**: Example text file
+                
+                ## Usage
+                Use the dashboard interface to interact with tools and resources.
+                """;
+            case "file://example.txt" -> """
+                This is an example text file resource.
+                
+                It demonstrates how MCP servers can provide access to files
+                and other resources through the Model Context Protocol.
+                
+                Content can be:
+                - Plain text (like this file)
+                - JSON data
+                - Markdown documentation
+                - Binary data (with appropriate encoding)
+                
+                The MCP protocol allows clients to discover and access
+                these resources dynamically.
+                """;
+            default -> throw new IllegalArgumentException("Unknown resource: " + uri);
+        };
     }
     
     // Helper methods

@@ -17,6 +17,7 @@ mcp:
   
   # Multiple server configurations for demonstration
   servers:
+    # External Python-based MCP servers
     - id: filesystem-server
       name: File System MCP Server
       command: uvx
@@ -57,6 +58,27 @@ mcp:
       env:
         MCP_LOG_LEVEL: INFO
       enabled: false  # Optional server for advanced scenarios
+    
+    # Built-in Java-based MCP servers
+    - id: calculator-server
+      name: Calculator MCP Server (Java)
+      command: java
+      args:
+        - -cp
+        - target/classes
+        - com.example.mcplearning.mcp.javaserver.examples.CalculatorMCPServer
+      env: {}
+      enabled: true
+      
+    - id: weather-server
+      name: Weather MCP Server (Java)
+      command: java
+      args:
+        - -cp
+        - target/classes
+        - com.example.mcplearning.mcp.javaserver.examples.WeatherMCPServer
+      env: {}
+      enabled: true
 
 # Enhanced logging for multi-server debugging
 logging:

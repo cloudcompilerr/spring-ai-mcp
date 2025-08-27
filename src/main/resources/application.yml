@@ -58,6 +58,7 @@ mcp:
   
   # Server configurations (examples for educational purposes)
   servers:
+    # External Python-based MCP servers
     - id: filesystem-server
       name: File System MCP Server
       command: uvx
@@ -74,6 +75,26 @@ mcp:
         - --repository
         - /path/to/repo
       env: {}  # Empty environment variables map
+      enabled: false  # Disabled by default for initial setup
+    
+    # Built-in Java-based MCP servers
+    - id: calculator-server
+      name: Calculator MCP Server (Java)
+      command: java
+      args:
+        - -cp
+        - target/classes
+        - com.example.mcplearning.mcp.javaserver.examples.CalculatorMCPServer
+      env: {}
+      enabled: false  # Disabled by default for initial setup
+    - id: weather-server
+      name: Weather MCP Server (Java)
+      command: java
+      args:
+        - -cp
+        - target/classes
+        - com.example.mcplearning.mcp.javaserver.examples.WeatherMCPServer
+      env: {}
       enabled: false  # Disabled by default for initial setup
 
 # Logging configuration for educational verbose output

@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">MCP Learning Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-connected {
+            background-color: #10b981;
+        }
+        
+        .status-disconnected {
+            background-color: #ef4444;
+        }
+        
+        .status-connecting {
+            background-color: #f59e0b;
+        }
+        
+        .server-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .server-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .server-item:hover {
+            background-color: #f9fafb;
+            border-color: #667eea;
+        }
+        
+        .server-item.selected {
+            background-color: #eff6ff;
+            border-color: #667eea;
+        }
+        
+        .server-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .server-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .server-id {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        
+        .mcp-client {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: 600px;
+        }
+        
+        .client-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        
+        .select {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .input {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+        
+        .textarea {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .response-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .response-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .response-content {
+            flex: 1;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .error {
+            color: #dc2626;
+            background-color: #fef2f2;
+            border-color: #fecaca;
+        }
+        
+        .success {
+            color: #059669;
+            background-color: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        
+        .tool-form {
+            display: none;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .tool-form.active {
+            display: flex;
+        }
+        
+        .timestamp {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .client-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 MCP Learning Platform</h1>
+            <p>Interactive Multi-Server Model Context Protocol Client</p>
+            <p class="timestamp" th:text="'Started at: ' + ${timestamp}">Started at: timestamp</p>
+        </div>
+        
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Server Status Card -->
+                <div class="card">
+                    <h3>🖥️ MCP Servers</h3>
+                    <div id="server-list" class="server-list">
+                        <div class="server-item" data-server-id="demo">
+                            <div class="server-info">
+                                <div class="server-name">Demo Server</div>
+                                <div class="server-id">demo-server</div>
+                            </div>
+                            <span class="status-indicator status-connecting"></span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="refreshServers()" style="margin-top: 1rem; width: 100%;">
+                        🔄 Refresh Servers
+                    </button>
+                </div>
+                
+                <!-- Configuration Card -->
+                <div class="card">
+                    <h3>⚙️ Configuration</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Multi-Server:</span>
+                            <span th:text="${multiServerEnabled} ? '✅ Enabled' : '❌ Disabled'">Status</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Servers:</span>
+                            <span th:text="${serverCount}">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Verbose Logging:</span>
+                            <span th:text="${verboseLogging} ? '✅ On' : '❌ Off'">Status</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Links Card -->
+                <div class="card">
+                    <h3>🔗 Quick Links</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <a href="/api/mcp/status" target="_blank" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">📊 System Status</a>
+                        <a href="/api/mcp/config" target="_blank" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">⚙️ Configuration</a>
+                        <a href="/actuator/health" target="_blank" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">💚 Health Check</a>
+                        <a href="https://spec.modelcontextprotocol.io/" target="_blank" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">📖 MCP Spec</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- MCP Client Interface -->
+                <div class="card">
+                    <h3>🔧 MCP Client Interface</h3>
+                    <div class="mcp-client">
+                        <!-- Controls -->
+                        <div class="client-controls">
+                            <select id="operation-select" class="select" onchange="onOperationChange()">
+                                <option value="">Select Operation</option>
+                                <option value="list-tools">List Tools</option>
+                                <option value="call-tool">Call Tool</option>
+                                <option value="list-resources">List Resources</option>
+                                <option value="read-resource">Read Resource</option>
+                                <option value="server-status">Server Status</option>
+                            </select>
+                            
+                            <select id="server-select" class="select">
+                                <option value="">Auto-select Server</option>
+                            </select>
+                            
+                            <button class="btn btn-primary" onclick="executeOperation()" id="execute-btn">
+                                ▶️ Execute
+                            </button>
+                            
+                            <button class="btn btn-secondary" onclick="clearResponse()">
+                                🗑️ Clear
+                            </button>
+                        </div>
+                        
+                        <!-- Tool Call Form -->
+                        <div id="tool-form" class="tool-form">
+                            <input type="text" id="tool-name" class="input" placeholder="Tool name (e.g., calculate)" />
+                            <textarea id="tool-args" class="textarea" placeholder='Tool arguments as JSON (e.g., {"expression": "2 + 3"})'></textarea>
+                        </div>
+                        
+                        <!-- Resource Read Form -->
+                        <div id="resource-form" class="tool-form">
+                            <input type="text" id="resource-uri" class="input" placeholder="Resource URI (e.g., file://example.txt)" />
+                        </div>
+                        
+                        <!-- Response Area -->
+                        <div class="response-area">
+                            <div class="response-header">
+                                <h4>Response:</h4>
+                                <span id="response-server" class="timestamp"></span>
+                            </div>
+                            <div id="response-content" class="response-content">
+                                Ready to execute MCP operations...
+                                
+🎯 Quick Start:
+1. Select "List Tools" to see available tools
+2. Choose a server or let the system auto-select
+3. Click Execute to see the response
+4. Try "Call Tool" with tool name and arguments
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let selectedServerId = null;
+        let availableTools = [];
+        let availableResources = [];
+        
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshServers();
+        });
+        
+        // Operation selection handler
+        function onOperationChange() {
+            const operation = document.getElementById('operation-select').value;
+            const toolForm = document.getElementById('tool-form');
+            const resourceForm = document.getElementById('resource-form');
+            
+            // Hide all forms
+            toolForm.classList.remove('active');
+            resourceForm.classList.remove('active');
+            
+            // Show relevant form
+            if (operation === 'call-tool') {
+                toolForm.classList.add('active');
+            } else if (operation === 'read-resource') {
+                resourceForm.classList.add('active');
+            }
+        }
+        
+        // Refresh server list
+        async function refreshServers() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                
+                const serverList = document.getElementById('server-list');
+                const serverSelect = document.getElementById('server-select');
+                
+                // Clear existing servers
+                serverList.innerHTML = '';
+                serverSelect.innerHTML = '<option value="">Auto-select Server</option>';
+                
+                // Add servers
+                data.servers.forEach(server => {
+                    // Add to server list
+                    const serverItem = document.createElement('div');
+                    serverItem.className = 'server-item';
+                    serverItem.dataset.serverId = server.id;
+                    serverItem.onclick = () => selectServer(server.id);
+                    
+                    const statusClass = server.enabled ? 'status-connecting' : 'status-disconnected';
+                    
+                    serverItem.innerHTML = `
+                        <div class="server-info">
+                            <div class="server-name">${server.name}</div>
+                            <div class="server-id">${server.id}</div>
+                        </div>
+                        <span class="status-indicator ${statusClass}"></span>
+                    `;
+                    
+                    serverList.appendChild(serverItem);
+                    
+                    // Add to server select
+                    if (server.enabled) {
+                        const option = document.createElement('option');
+                        option.value = server.id;
+                        option.textContent = server.name;
+                        serverSelect.appendChild(option);
+                    }
+                });
+                
+                // Check server health
+                checkServerHealth();
+                
+            } catch (error) {
+                console.error('Failed to refresh servers:', error);
+                showResponse('Error refreshing servers: ' + error.message, true);
+            }
+        }
+        
+        // Check server health
+        async function checkServerHealth() {
+            try {
+                const response = await fetch('/api/mcp/status');
+                const data = await response.json();
+                
+                // Update server status indicators
+                document.querySelectorAll('.server-item').forEach(item => {
+                    const serverId = item.dataset.serverId;
+                    const indicator = item.querySelector('.status-indicator');
+                    
+                    // For now, assume servers are connected if they're enabled
+                    // In a real implementation, you'd check actual connection status
+                    indicator.className = 'status-indicator status-connected';
+                });
+                
+            } catch (error) {
+                console.error('Failed to check server health:', error);
+            }
+        }
+        
+        // Select server
+        function selectServer(serverId) {
+            selectedServerId = serverId;
+            
+            // Update UI
+            document.querySelectorAll('.server-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            const selectedItem = document.querySelector(`[data-server-id="${serverId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
+            
+            // Update server select
+            document.getElementById('server-select').value = serverId;
+        }
+        
+        // Execute MCP operation
+        async function executeOperation() {
+            const operation = document.getElementById('operation-select').value;
+            const serverId = document.getElementById('server-select').value || selectedServerId;
+            
+            if (!operation) {
+                showResponse('Please select an operation', true);
+                return;
+            }
+            
+            const executeBtn = document.getElementById('execute-btn');
+            const responseContent = document.getElementById('response-content');
+            
+            // Show loading state
+            executeBtn.disabled = true;
+            executeBtn.textContent = '⏳ Executing...';
+            responseContent.classList.add('loading');
+            
+            try {
+                let result;
+                
+                switch (operation) {
+                    case 'list-tools':
+                        result = await listTools(serverId);
+                        break;
+                    case 'call-tool':
+                        result = await callTool(serverId);
+                        break;
+                    case 'list-resources':
+                        result = await listResources(serverId);
+                        break;
+                    case 'read-resource':
+                        result = await readResource(serverId);
+                        break;
+                    case 'server-status':
+                        result = await getServerStatus(serverId);
+                        break;
+                    default:
+                        throw new Error('Unknown operation: ' + operation);
+                }
+                
+                showResponse(result.content, result.isError, result.serverId);
+                
+            } catch (error) {
+                showResponse('Error: ' + error.message, true);
+            } finally {
+                // Reset button state
+                executeBtn.disabled = false;
+                executeBtn.textContent = '▶️ Execute';
+                responseContent.classList.remove('loading');
+            }
+        }
+        
+        // MCP Operations
+        async function listTools(serverId) {
+            const url = serverId ? `/api/mcp/examples/tools?serverId=${serverId}` : '/api/mcp/examples/tools';
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to list tools');
+            }
+            
+            availableTools = data.tools || [];
+            
+            return {
+                content: JSON.stringify(data, null, 2),
+                isError: false,
+                serverId: data.serverId || 'auto-selected'
+            };
+        }
+        
+        async function callTool(serverId) {
+            const toolName = document.getElementById('tool-name').value.trim();
+            const toolArgsText = document.getElementById('tool-args').value.trim();
+            
+            if (!toolName) {
+                throw new Error('Please enter a tool name');
+            }
+            
+            let toolArgs = {};
+            if (toolArgsText) {
+                try {
+                    toolArgs = JSON.parse(toolArgsText);
+                } catch (e) {
+                    throw new Error('Invalid JSON in tool arguments: ' + e.message);
+                }
+            }
+            
+            const requestBody = {
+                toolName: toolName,
+                arguments: toolArgs
+            };
+            
+            if (serverId) {
+                requestBody.serverId = serverId;
+            }
+            
+            const response = await fetch('/api/mcp/examples/dashboard/tool-call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to call tool');
+            }
+            
+            return {
+                content: JSON.stringify(data, null, 2),
+                isError: data.isError || false,
+                serverId: data.serverId || 'auto-selected'
+            };
+        }
+        
+        async function listResources(serverId) {
+            const url = serverId ? `/api/mcp/examples/resources?serverId=${serverId}` : '/api/mcp/examples/resources';
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to list resources');
+            }
+            
+            availableResources = data.resources || [];
+            
+            return {
+                content: JSON.stringify(data, null, 2),
+                isError: false,
+                serverId: data.serverId || 'auto-selected'
+            };
+        }
+        
+        async function readResource(serverId) {
+            const resourceUri = document.getElementById('resource-uri').value.trim();
+            
+            if (!resourceUri) {
+                throw new Error('Please enter a resource URI');
+            }
+            
+            const requestBody = {
+                uri: resourceUri
+            };
+            
+            if (serverId) {
+                requestBody.serverId = serverId;
+            }
+            
+            const response = await fetch('/api/mcp/examples/dashboard/resource-read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to read resource');
+            }
+            
+            return {
+                content: JSON.stringify(data, null, 2),
+                isError: data.isError || false,
+                serverId: data.serverId || 'auto-selected'
+            };
+        }
+        
+        async function getServerStatus(serverId) {
+            const url = serverId ? `/api/mcp/status?serverId=${serverId}` : '/api/mcp/status';
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to get server status');
+            }
+            
+            return {
+                content: JSON.stringify(data, null, 2),
+                isError: false,
+                serverId: serverId || 'all-servers'
+            };
+        }
+        
+        // Show response
+        function showResponse(content, isError = false, serverId = null) {
+            const responseContent = document.getElementById('response-content');
+            const responseServer = document.getElementById('response-server');
+            
+            responseContent.textContent = content;
+            responseContent.className = 'response-content';
+            
+            if (isError) {
+                responseContent.classList.add('error');
+            } else {
+                responseContent.classList.add('success');
+            }
+            
+            if (serverId) {
+                responseServer.textContent = `Server: ${serverId} | ${new Date().toLocaleTimeString()}`;
+            } else {
+                responseServer.textContent = new Date().toLocaleTimeString();
+            }
+        }
+        
+        // Clear response
+        function clearResponse() {
+            const responseContent = document.getElementById('response-content');
+            responseContent.textContent = 'Ready to execute MCP operations...';
+            responseContent.className = 'response-content';
+            
+            document.getElementById('response-server').textContent = '';
+        }
+        
+        // Auto-refresh servers every 30 seconds
+        setInterval(checkServerHealth, 30000);
+    </script>
+</body>
+</html>

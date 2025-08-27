@@ -2,6 +2,7 @@ package com.example.mcplearning.mcp.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * - Stateful selection strategy implementation
  */
 @Component
+@Primary
 public class RoundRobinSelectionStrategy implements ServerSelectionStrategy {
     
     private static final Logger logger = LoggerFactory.getLogger(RoundRobinSelectionStrategy.class);

@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 /**
  * Configuration class for reactive MCP components.
@@ -25,23 +24,33 @@ public class ReactiveMCPConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(ReactiveMCPConfiguration.class);
     
     /**
+     * Creates a demo MCP client bean for educational purposes.
+     * 
+     * This bean provides a basic MCPClient implementation that can be used
+     * for demonstrations and testing when no real MCP servers are available.
+     * 
+     * @param mcpConfiguration The MCP configuration properties
+     * @return A configured MCPClient instance
+     */
+    @Bean
+    @ConditionalOnProperty(name = "mcp.demo.enabled", havingValue = "true", matchIfMissing = true)
+    public MCPClient demoMCPClient(MCPConfiguration mcpConfiguration) {
+        logger.info("Creating demo MCP client with configuration: {}", mcpConfiguration);
+        return createDemoMCPClient(mcpConfiguration);
+    }
+    
+    /**
      * Creates a reactive MCP client bean when reactive features are enabled.
      * 
      * This bean wraps an existing MCPClient to provide reactive operations.
-     * The reactive client is created as primary when reactive mode is enabled.
      * 
-     * @param mcpConfiguration The MCP configuration properties
+     * @param mcpClient The MCPClient to wrap
      * @return A configured ReactiveMCPClient instance
      */
     @Bean
-    @Primary
     @ConditionalOnProperty(name = "mcp.reactive.enabled", havingValue = "true", matchIfMissing = true)
-    public ReactiveMCPClient reactiveMCPClient(MCPConfiguration mcpConfiguration) {
-        logger.info("Creating reactive MCP client with configuration: {}", mcpConfiguration);
-        
-        // For demonstration purposes, create a simple MCP client
-        // In a real application, this would be injected or configured based on requirements
-        MCPClient mcpClient = createDemoMCPClient(mcpConfiguration);
+    public ReactiveMCPClient reactiveMCPClient(MCPClient mcpClient) {
+        logger.info("Creating reactive MCP client wrapper");
         
         ReactiveMCPClient reactiveMCPClient = new DefaultReactiveMCPClient(mcpClient);
         logger.info("Reactive MCP client created successfully");
